@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+  <mapper namespace="com.spring.mapper.ProductMapper">
+  
+  <!-- 상품 등록 -->
+  	<insert id="productEnroll">
+  	<selectKey resultType="int" keyProperty="productId" order="AFTER">
+  		SELECT LAST_INSERT_ID()
+  	</selectKey>
+  		insert into star_product(productName, productPrice ,categoryId, productInfo,cateCode)
+  		values(#{productName},#{productPrice},#{categoryId},#{productInfo},#{cateCode})
+  	</insert>
+  	
+  	
+  	<!--  검색 조건  -->
+  	<sql id="ProductCriteria">
+  		<trim prefix="where (" suffix=")AND" prefixOverrides="AND">
+  			<foreach item="type" collection="typeArr">
+  				<trim prefix="AND">
+  					<choose>
+  					
+  						<when test="type == 'C'.toString()">
+  						
+  							cateCode like CONCAT ('%', #{cateCode}, '%')
+  						</when>
+  						
+	  				</choose>
+  				</trim>
+  			</foreach>
+  		</trim>
+  	
+ 		<if test="productKeyword != null">
+ 			WHERE productName LIKE CONCAT('%', #{productKeyword}, '%') AND cateCode LIKE CONCAT('%', #{cateCode}, '%')
+
+ 		</if>
+  	 
+ 	</sql>
+  	<!-- 상품 목록 -->
+  	<select id="productGetList" resultType="com.spring.model.ProductVO">
+  	 
+  	 SELECT 
+   		 productId, 
+   		 productName, 
+    	productPrice, 
+   		productInfo, 
+   		 a.cateCode, 
+   		 b.cateName,
+    	categoryId,
+    	regDate,
+    	updateDate
+  	FROM 
+    			star_product a
+    			left outer join star_cate b on a.cateCode = b.cateCode  	
+    WHERE
+    	1=1			
+    			<if test="productKeyword != null">
+    				AND (productName like CONCAT ('%',#{productKeyword},'%'))
+    				
+    			</if>  			
+    			<if test="cateCode != null">
+    				AND A.CATECODE = #{cateCode}
+    				
+    			</if>  			
+  			limit #{skip}, #{productAmount}
+  	 	
+  	</select>
+  	
+  	<!-- 상품 수 -->
+  	<select id="productGetTotal" resultType="int" >
+  		SELECT COUNT(*) FROM star_product
+ 			 <if test="productKeyword != null">
+    			WHERE productName LIKE CONCAT('%', #{productKeyword}, '%')
+  			</if>
+
+  		
+  	</select>
+  	
+  	<!-- 상품 디테일 -->
+
+	<select id="productGetDetail" resultType="com.spring.model.ProductVO">
+		select  * from
+		star_product where productId = #{productId}
+	</select>  
+ 
+ 	<!-- 제품 정보 수정 -->
+ 	<update id="productModify">
+ 		UPDATE star_product SET 
+ 		 productName = #{productName}, 
+  		categoryId = #{categoryId}, 
+ 		 productPrice = #{productPrice},
+  		cateCode = #{cateCode}, 
+ 		 productInfo = #{productInfo}, 
+		 updateDate = NOW()
+		WHERE productId = #{productId}
+
+ 	</update>
+ 
+ 	<!-- 제품 삭제	 -->
+ 	<delete id="productDelete">
+ 		delete from star_product where productId = #{productId}
+ 	</delete>
+ 	
+ 	<!-- 이미지 등록 -->
+ 	<insert id = "imageEnroll">
+ 		insert into star_image(productId, fileName, uploadPath, uuid) values (#{productId}, #{fileName}, #{uploadPath}, #{uuid})
+ 	</insert>
+ 	
+ 	<!--  지정 상품 이미지 전체 삭제 -->
+ 	
+ 	<delete id="deleteImageAll">
+ 		delete FROM star_image where productId = #{productId}
+ 	</delete>
+ 	
+ 	<!--  어제 날짜 이미지 리스트 -->
+ 	<select id = "checkFileList" resultType="com.spring.model.AttachImageVO">
+ 		SELECT * FROM star_image WHERE uploadpath = DATE_FORMAT(DATE_ADD(NOW(), INTERVAL -1 DAY), '%Y\%m\%d')
+
+ 	</select>
+ 	
+ 	<!-- 지정 상품 이미지 정보 얻기 -->
+ 	<select id="getAttachInfo" resultType="com.spring.model.AttachImageVO">
+ 		
+ 		select * from star_image where productId = #{productId}
+ 		
+ 	</select>
+ 	
+ 	
+ 	<!-- 상품Id 리스트 요청  -->
+ 	<select id="getProductIdList" resultType="String">
+ 		select productId from star_product where productName like CONCAT ('%', #{productKeyword}, '%')
+ 		
+ 	</select>
+ 	
+ 	<!--  카테고리 리스트 -->
+ 	<select id="cateList" resultType="com.spring.model.CateVO">
+ 		select * from star_cate order by cateCode
+ 	</select>
+ 	
+ 	<!-- 음료 카테고리 리스트 -->
+ 	<select id="getCateCode1" resultType="com.spring.model.ProductVO">
+ 		
+ 			select * from star_cate where cateCode <![CDATA[>]]> 100000 and cateCode <![CDATA[<]]> 200000
+ 		
+ 	</select>
+ 	
+ 	<!-- 푸드 카테고리 리스트 -->
+ 	<select id="getCateCode2" resultType="com.spring.model.ProductVO">
+ 		
+ 			select * from star_cate where cateCode <![CDATA[>]]> 200000 and cateCode <![CDATA[<]]> 300000 
+ 		
+ 	</select>
+ 	
+ 	<!--검색 대상 카테고리 리스트 -->
+ 	<select id="getCateList" resultType="String">
+ 	
+ 		select DISTINCT cateCode from star_product where
+ 	
+ 			1=1
+ 			<if test="productKeyword != null">
+ 			AND productName like CONCAT ('%', #{productKeyword},'%')
+ 			</if>
+	
+ 	</select>
+ 	
+ 	<select id="getCateInfo" resultType="com.spring.model.CateFilterDTO">
+ 		
+		select
+			*
+		from
+ 			star_cate
+ 		where
+ 			1=1
+ 			AND cateCode = #{cateCode}
+ 	 </select>
+ 	
+ 	<!-- 상품 정보 -->
+ 	<select id="getProductInfo" resultType="com.spring.model.ProductVO">
+ 		select a.productId , a.productName , a.categoryId , a.cateCode , b.cateName , a.productPrice , 	a.productInfo 
+ 		from star_product a left outer join star_cate b on a.cateCode = b.cateCode
+ 		where productId = ${productId}
+ 	</select>
+ 	
+ 	
+ 	<select id="getProductIdName" resultType="com.spring.model.ProductVO">
+ 		select productId , productName from star_product
+ 		where productId = #{productId}
+ 	</select>
+  </mapper>
